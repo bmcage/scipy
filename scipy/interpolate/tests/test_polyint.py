@@ -364,5 +364,51 @@ class CheckPiecewise(TestCase):
         assert_almost_equal(P.derivatives(self.test_xs,2),piecewise_polynomial_interpolate(self.xi,self.yi,self.test_xs,der=[0,1]))
 
 
+class CheckInvertPchip(TestCase):
+    
+    def setUp(self):
+        x = np.linspace(0, 10, 11)
+        self.pch_lin = pchip(x, x)
+        self.pch_kwa = pchip(x, np.power(x,2))
+        self.pch_cub = pchip(x, np.power(x,3))
+        self.pch_limit = pchip([0,2], [0,4])
+        h = -np.power(10, x[::-1])/5
+        u    = 1/np.power(1+ np.power(-0.015 * h, 1.3), 1. - 1./1.3)
+        self.pch_vGn = pchip(h, u)
+
+    def test_inv_lin(self):
+        self.pch_lin_inv = self.pch_lin.inverse()
+        test = np.array([1., 3.5, 8.3])
+        assert_almost_equal(self.pch_lin_inv(test), test)
+        assert_almost_equal(self.pch_lin_inv(self.pch_lin(test)), test)
+
+    def test_inv_kwa(self):
+        self.pch_kwa_inv = self.pch_kwa.inverse()
+        test = np.array([1., 2.1, 8.3])
+        assert_almost_equal(self.pch_kwa_inv(np.power(test, 2)), test, 2)
+        assert_almost_equal(self.pch_kwa_inv(self.pch_kwa(test)), test, 2)
+        
+    def test_inv_cub(self):
+        self.pch_cub_inv = self.pch_cub.inverse()
+        test = np.array([1., 2.1, 8.3])
+        assert_almost_equal(self.pch_cub_inv(np.power(test, 3)), test, 1)
+        assert_almost_equal(self.pch_cub_inv(self.pch_cub(test)), test, 2)
+   
+    def test_inv_vGn(self):
+        self.pch_vGn_inv = self.pch_vGn.inverse()
+        test = np.array([-19., -54., -200., -500.])
+        assert_almost_equal(self.pch_vGn_inv(self.pch_vGn(test)), test)
+        #test scalar
+        test = -54
+        assert_almost_equal(self.pch_vGn_inv(self.pch_vGn(test)), test)
+        assert_almost_equal(0,1)
+#
+#    def test_inv_limit(self):
+#        self.pch_limit_inv = self.pch_limit.inverse()
+#        test = 2
+#        assert_almost_equal(self.pch_limit_inv(test), 1)
+#        assert_almost_equal(self.pch_limit_inv(self.pch_limit(test)), test)
+ 
+
 if __name__ == '__main__':
     run_module_suite()

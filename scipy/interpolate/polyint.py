@@ -860,7 +860,7 @@ class PiecewisePolynomial(_Interpolator1DWithDerivatives):
         else:
             m = len(x)
             pos = np.clip(np.searchsorted(self.xi, x) - 1, 0, self.n-2)
-            y = np.zeros((der,m,self.r), dtype=self.dtype)
+            y = np.zeros((der, m, self.r), dtype=self.dtype)
             if y.size > 0:
                 for i in xrange(self.n-1):
                     c = pos == i
@@ -957,6 +957,8 @@ class PchipInterpolator(PiecewisePolynomial):
 
         xp = x.reshape((x.shape[0],) + (1,)*(y.ndim-1))
         yp = np.rollaxis(y, axis)
+        self.origxi = xp
+        self.origyi = yp
 
         data = np.empty((yp.shape[0], 2) + yp.shape[1:], y.dtype)
         data[:,0] = yp
@@ -1016,6 +1018,36 @@ class PchipInterpolator(PiecewisePolynomial):
         PchipInterpolator._edge_case(mk[-1],dk[-2], dk[-1])
 
         return dk.reshape(y_shape)
+
+    def inverse(self):
+        """
+        Return the PiecewisePolynomial that is the inverse of this interpolator.
+        If this interpolator interpolates `(x[i], y[i])` for `x[0]<x <x[n]`, 
+        then the interpolator is `f(x)`, with `f(x[i]) = y[i]`.
+        
+        The inverse is the exact `f^{-1}(y)`, such that `f^{-1}(f(x)) = x`.
+        As for  PchipInterpolator `x[i+1] > x[i]` and `y[i+1] >= y[i]`, this
+        inverse is only available if `y[i+1] > y[i]`. If this is not the case
+        a ValueError will be raised.
+        As PchipInterpolator is monotonic, the solution is unique if the
+        Interpolator has been constructed with y[i+1] > y[i]
+        
+        Returns
+        -------
+        inv : PiecewisePolynomial representing the inverse.
+        """
+        #cubic interpolation is unique if function value and inverse is known
+        deriv = self.derivatives(self.origxi, 2)
+#        print ('deriv', deriv)
+#        print (self.origxi, self.origyi)
+#        print ('call', self.__call__(self.origxi))
+        data = np.empty((self.origxi.shape[0], 2), self.origxi.dtype)
+        data[:,0] = self.origxi
+        data[:,1] = 1/deriv[1]
+        data = data.transpose([0, 1])
+#        print ('data', data)
+
+        return PiecewisePolynomial(self.origyi, data, orders=3, direction=None)
 
 
 def pchip_interpolate(xi, yi, x, der=0, axis=0):
