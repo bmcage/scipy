@@ -99,6 +99,14 @@ class CheckKrogh(TestCase):
         P = KroghInterpolator(self.xs,self.ys)
         assert_almost_equal(self.true_poly(self.test_xs),P(self.test_xs))
 
+    def test_list(self):
+        P = KroghInterpolator(list(self.xs), list(self.ys))
+        assert_almost_equal(self.true_poly(self.test_xs), P(list(self.test_xs)))
+
+    def test_empty(self):
+        P = KroghInterpolator(self.xs,self.ys)
+        assert P([]) == [], 'result of empty array not empty but ' + str(P([]))
+
     def test_scalar(self):
         P = KroghInterpolator(self.xs,self.ys)
         assert_almost_equal(self.true_poly(7),P(7))
@@ -363,7 +371,6 @@ class CheckPiecewise(TestCase):
         assert_almost_equal(P.derivative(self.test_xs,2),piecewise_polynomial_interpolate(self.xi,self.yi,self.test_xs,der=2))
         assert_almost_equal(P.derivatives(self.test_xs,2),piecewise_polynomial_interpolate(self.xi,self.yi,self.test_xs,der=[0,1]))
 
-
 class CheckInvertPchip(TestCase):
     
     def setUp(self):
@@ -401,13 +408,23 @@ class CheckInvertPchip(TestCase):
         #test scalar
         test = -54
         assert_almost_equal(self.pch_vGn_inv(self.pch_vGn(test)), test)
-        assert_almost_equal(0,1)
-#
-#    def test_inv_limit(self):
-#        self.pch_limit_inv = self.pch_limit.inverse()
-#        test = 2
-#        assert_almost_equal(self.pch_limit_inv(test), 1)
-#        assert_almost_equal(self.pch_limit_inv(self.pch_limit(test)), test)
+#        import pylab
+#        xaxis = np.linspace(-1000., 1e-1, 100)
+#        y = self.pch_vGn(xaxis)
+#        xaxisinv = self.pch_vGn_inv(y)
+#        h = -np.power(10, np.linspace(0, 10, 11)[::-1])/5
+#        pylab.xlim(xmin=-2001)
+#        pylab.plot(h, 1/np.power(1+ np.power(-0.015 * h, 1.3), 1. - 1./1.3), 'g-')
+#        pylab.plot(xaxis, y, 'bo')
+#        pylab.plot(xaxisinv, y, 'r')
+#        pylab.show()
+        
+
+    def test_inv_limit(self):
+        self.pch_limit_inv = self.pch_limit.inverse()
+        test = 2
+        assert_almost_equal(self.pch_limit_inv(test), 1)
+        assert_almost_equal(self.pch_limit_inv(self.pch_limit(test)), test)
  
 
 if __name__ == '__main__':

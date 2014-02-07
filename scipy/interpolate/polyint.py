@@ -1038,16 +1038,25 @@ class PchipInterpolator(PiecewisePolynomial):
         """
         #cubic interpolation is unique if function value and inverse is known
         deriv = self.derivatives(self.origxi, 2)
-#        print ('deriv', deriv)
-#        print (self.origxi, self.origyi)
-#        print ('call', self.__call__(self.origxi))
         data = np.empty((self.origxi.shape[0], 2), self.origxi.dtype)
         data[:,0] = self.origxi
         data[:,1] = 1/deriv[1]
         data = data.transpose([0, 1])
-#        print ('data', data)
 
-        return PiecewisePolynomial(self.origyi, data, orders=3, direction=None)
+        inversepol = PiecewisePolynomial(self.origyi, data, orders=3, direction=None)
+        # Previous inversepol is not stable, we correct it by setting 
+        # different subpoly
+        newpoly = []
+        for ind, poly in enumerate(inversepol.polynomials):
+            yptns = np.array([self.origxi[ind],
+                     self.origxi[ind]+(self.origxi[ind+1]-self.origxi[ind])/3, 
+                     self.origxi[ind]+2*(self.origxi[ind+1]-self.origxi[ind])/3, 
+                     self.origxi[ind+1]], dtype = self.origxi.dtype)
+            xptns = self.__call__(yptns)
+            yptns = yptns.reshape((4, poly.r))
+            newpoly.append(KroghInterpolator(xptns, yptns, axis=0))
+        inversepol.polynomials[:] = newpoly[:]
+        return inversepol
 
 
 def pchip_interpolate(xi, yi, x, der=0, axis=0):
